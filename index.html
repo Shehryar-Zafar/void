@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TheGoalGuild — Plan. Focus. Achieve.</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        colors: {
+          brand: {
+            50:  '#eef2ff',
+            100: '#e0e7ff',
+            500: '#6366f1',
+            600: '#4f46e5',
+            700: '#4338ca',
+          }
+        },
+        animation: {
+          'fade-in': 'fadeIn 0.3s ease-out',
+          'slide-up': 'slideUp 0.4s ease-out',
+        },
+        keyframes: {
+          fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+          slideUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+        }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; }
+  .timetable-slot.drag-over { background-color: rgba(99, 102, 241, 0.15) !important; border: 2px dashed #6366f1 !important; }
+  .task-card { transition: all 0.2s ease; }
+  .task-card.dragging { opacity: 0.5; transform: scale(0.95); }
+  .checkbox-custom { -webkit-appearance: none; appearance: none; }
+  .checkbox-custom:checked { background-color: #6366f1; border-color: #6366f1; }
+  .checkbox-custom:checked::after {
+    content: '✓'; color: white; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: bold;
+  }
+  .progress-ring { transition: stroke-dashoffset 0.5s ease-out; }
+  .nav-btn.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 min-h-screen">
+
+
+<div class="flex flex-col lg:flex-row min-h-screen">
+
+ 
+  <aside class="lg:w-64 lg:min-h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 lg:flex lg:flex-col">
+    <div class="p-6 flex items-center justify-between lg:justify-start lg:gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">S</div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight">TheGoalGuild</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Plan. Focus. Achieve.</p>
+        </div>
+      </div>
+      <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+
+    <nav id="navMenu" class="hidden lg:flex flex-col gap-1 px-4 pb-4 lg:flex-1">
+      <button data-tab="dashboard" class="nav-btn active flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </button>
+      <button data-tab="timetable" class="nav-btn flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Timetable
+      </button>
+      <button data-tab="tasks" class="nav-btn flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Tasks
+      </button>
+      <button data-tab="goals" class="nav-btn flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Goals
+      </button>
+      <button data-tab="progress" class="nav-btn flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Progress
+      </button>
+
+      <div class="mt-auto pt-4 border-t border-slate-200 dark:border-slate-800 mt-6">
+        <button id="themeToggle" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <span id="themeText">Dark Mode</span>
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+ 
+  <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+
+   
+    <section id="tab-dashboard" class="tab-content animate-fade-in">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight" id="greetingText">Good morning! 👋</h2>
+        <p class="text-slate-500 dark:text-slate-400 mt-1" id="dateText"></p>
+      </div>
+
+      
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tasks Today</span>
+            <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
+              <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold" id="statTasksToday">0</p>
+          <p class="text-xs text-slate-500 mt-1"><span id="statTasksDone">0</span> completed</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Goals</span>
+            <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center">
+              <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold" id="statGoals">0</p>
+          <p class="text-xs text-slate-500 mt-1">In progress</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Study Hours</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+              <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold" id="statHours">0h</p>
+          <p class="text-xs text-slate-500 mt-1">This week</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Streak</span>
+            <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center">
+              <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.24 17 7.305 17.41 8.236 17.5 9.5 17 10.5c1.5-.5 2.5 0 2.5 0-.17 1.4-1.5 2.5-1.5 2.5"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold" id="statStreak">0 🔥</p>
+          <p class="text-xs text-slate-500 mt-1">Days active</p>
+        </div>
+      </div>
+
+      
+      <div class="grid lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-bold text-lg" id="calendarMonth">Calendar</h3>
+            <div class="flex items-center gap-2">
+              <button id="calPrev" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <button id="calToday" class="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">Today</button>
+              <button id="calNext" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-7 gap-1 mb-2">
+            <div class="text-center text-xs font-semibold text-slate-500 py-2">Sun</div>
+            <div class="text-center text-xs font-semibold text-slate-500 py-2">Mon</div>
+            <div class="text-center text-xs font-semibold text-slate-500 py-2">Tue</div>
+            <div class="text-center text-xs font-semibold text-slate-500 py-2">Wed</div>
+            <div class="text-center text-xs font-semibold text-slate-500 py-2">Thu</div>
+            <div class="text-center text-xs font-semibold text-slate-500 py-2">Fri</div>
+            <div class="text-center text-xs font-semibold text-slate-500 py-2">Sat</div>
+          </div>
+          <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
+        </div>
+
+        
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-bold text-lg">Today's Focus</h3>
+            <span class="text-xs px-2 py-1 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-medium" id="todayCount">0</span>
+          </div>
+          <div id="todayTasks" class="space-y-2 max-h-96 overflow-y-auto scrollbar-thin"></div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section id="tab-timetable" class="tab-content hidden animate-fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight">Weekly Timetable</h2>
+          <p class="text-slate-500 dark:text-slate-400 mt-1">Drag subject blocks into time slots</p>
+        </div>
+        <button id="addSubjectBtn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition">
+          + Add Subject
+        </button>
+      </div>
+
+      
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 mb-6">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">📚 Drag subjects to schedule them</p>
+        <div id="subjectsPalette" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-x-auto">
+        <div class="min-w-[800px]">
+          <div id="timetableGrid"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="tab-tasks" class="tab-content hidden animate-fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight">Tasks</h2>
+          <p class="text-slate-500 dark:text-slate-400 mt-1">Stay on top of everything</p>
+        </div>
+        <button id="addTaskBtn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition">
+          + New Task
+        </button>
+      </div>
+
+      
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button data-filter="all" class="task-filter active px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400">All</button>
+        <button data-filter="pending" class="task-filter px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400">Pending</button>
+        <button data-filter="completed" class="task-filter px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400">Completed</button>
+        <button data-filter="overdue" class="task-filter px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400">Overdue</button>
+      </div>
+
+      <div id="tasksList" class="space-y-3"></div>
+    </section>
+
+    
+    <section id="tab-goals" class="tab-content hidden animate-fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight">Goals</h2>
+          <p class="text-slate-500 dark:text-slate-400 mt-1">Aim high, track progress</p>
+        </div>
+        <button id="addGoalBtn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition">
+          + New Goal
+        </button>
+      </div>
+      <div id="goalsList" class="grid md:grid-cols-2 gap-4"></div>
+    </section>
+
+    
+    <section id="tab-progress" class="tab-content hidden animate-fade-in">
+      <div class="mb-6">
+        <h2 class="text-3xl font-bold tracking-tight">Progress Analytics</h2>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Visualize your study journey</p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <h3 class="font-bold mb-4">Weekly Task Completion</h3>
+          <canvas id="weeklyChart" height="200"></canvas>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <h3 class="font-bold mb-4">Subject Distribution</h3>
+          <canvas id="subjectChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <h3 class="font-bold mb-4">Task Status Overview</h3>
+        <canvas id="statusChart" height="100"></canvas>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+
+<div id="modalBackdrop" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+  <div id="modalContent" class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-slide-up"></div>
+</div>
+
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-3 rounded-xl shadow-2xl text-sm font-medium animate-slide-up"></div>
+
+<script>
+
+const STORE_KEY = 'studyflow_data_v1';
+const defaultData = {
+  subjects: [
+    { id: 's1', name: 'Mathematics', color: 'bg-blue-500' },
+    { id: 's2', name: 'Physics', color: 'bg-purple-500' },
+    { id: 's3', name: 'English', color: 'bg-emerald-500' },
+    { id: 's4', name: 'History', color: 'bg-amber-500' },
+  ],
+  timetable: {}, 
+  tasks: [],
+  goals: [],
+  theme: 'light',
+  streak: { count: 0, lastActive: null }
+};
+
+let data = loadData();
+let currentFilter = 'all';
+let calDate = new Date();
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(STORE_KEY);
+    if (saved) return { ...defaultData, ...JSON.parse(saved) };
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(defaultData));
+}
+function saveData() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+
+function applyTheme() {
+  const html = document.documentElement;
+  if (data.theme === 'dark') {
+    html.classList.add('dark'); html.classList.remove('light');
+    document.getElementById('moonIcon').classList.add('hidden');
+    document.getElementById('sunIcon').classList.remove('hidden');
+    document.getElementById('themeText').textContent = 'Light Mode';
+  } else {
+    html.classList.add('light'); html.classList.remove('dark');
+    document.getElementById('moonIcon').classList.remove('hidden');
+    document.getElementById('sunIcon').classList.add('hidden');
+    document.getElementById('themeText').textContent = 'Dark Mode';
+  }
+  if (window._charts) renderCharts();
+}
+document.getElementById('themeToggle').addEventListener('click', () => {
+  data.theme = data.theme === 'dark' ? 'light' : 'dark';
+  saveData(); applyTheme();
+});
+
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    if (tab === 'progress') setTimeout(renderCharts, 50);
+    if (window.innerWidth < 1024) document.getElementById('navMenu').classList.add('hidden');
+  });
+});
+document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+  document.getElementById('navMenu').classList.toggle('hidden');
+});
+
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 2200);
+}
+
+ 
+function openModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalBackdrop').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.add('hidden');
+}
+document.getElementById('modalBackdrop').addEventListener('click', e => {
+  if (e.target.id === 'modalBackdrop') closeModal();
+});
+
+
+function updateGreeting() {
+  const h = new Date().getHours();
+  let g = 'Good evening';
+  if (h < 12) g = 'Good morning';
+  else if (h < 18) g = 'Good afternoon';
+  document.getElementById('greetingText').textContent = `${g}! 👋`;
+  document.getElementById('dateText').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function updateStats() {
+  const today = new Date().toDateString();
+  const todayTasks = data.tasks.filter(t => t.due && new Date(t.due).toDateString() === today);
+  const doneToday = todayTasks.filter(t => t.done);
+  document.getElementById('statTasksToday').textContent = todayTasks.length;
+  document.getElementById('statTasksDone').textContent = doneToday.length;
+  document.getElementById('statGoals').textContent = data.goals.filter(g => g.current < g.target).length;
+
+  
+  const hours = Object.keys(data.timetable).filter(k => data.timetable[k]).length;
+  document.getElementById('statHours').textContent = hours + 'h';
+
+  // Streak
+  const last = data.streak.lastActive;
+  const now = new Date().toDateString();
+  if (last !== now) {
+    if (last) {
+      const diff = (new Date(now) - new Date(last)) / (1000 * 60 * 60 * 24);
+      data.streak.count = diff <= 1.5 ? data.streak.count + 1 : 1;
+    } else data.streak.count = 1;
+    data.streak.lastActive = now;
+    saveData();
+  }
+  document.getElementById('statStreak').textContent = data.streak.count + ' 🔥';
+}
+
+function renderTodayTasks() {
+  const today = new Date().toDateString();
+  const list = data.tasks.filter(t => t.due && new Date(t.due).toDateString() === today);
+  document.getElementById('todayCount').textContent = list.length;
+  const c = document.getElementById('todayTasks');
+  if (list.length === 0) {
+    c.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">No tasks for today.<br/>Enjoy your day! ✨</div>`;
+    return;
+  }
+  c.innerHTML = list.map(t => `
+    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
+      <input type="checkbox" ${t.done ? 'checked' : ''} data-id="${t.id}" class="checkbox-custom today-check w-5 h-5 rounded-md border-2 border-slate-300 dark:border-slate-600 cursor-pointer flex-shrink-0"/>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium ${t.done ? 'line-through text-slate-400' : ''} truncate">${escapeHtml(t.title)}</p>
+        ${t.subject ? `<p class="text-xs text-slate-500">${escapeHtml(t.subject)}</p>` : ''}
+      </div>
+      <span class="text-xs px-2 py-0.5 rounded-full ${priorityClass(t.priority)}">${t.priority || 'med'}</span>
+    </div>
+  `).join('');
+  c.querySelectorAll('.today-check').forEach(cb => {
+    cb.addEventListener('change', () => toggleTask(cb.dataset.id));
+  });
+}
+
+
+function renderCalendar() {
+  const y = calDate.getFullYear(), m = calDate.getMonth();
+  document.getElementById('calendarMonth').textContent = calDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const grid = document.getElementById('calendarGrid');
+  let html = '';
+  for (let i = 0; i < first; i++) html += `<div></div>`;
+  for (let d = 1; d <= days; d++) {
+    const date = new Date(y, m, d);
+    const isToday = date.toDateString() === today.toDateString();
+    const dayTasks = data.tasks.filter(t => t.due && new Date(t.due).toDateString() === date.toDateString());
+    const hasTasks = dayTasks.length > 0;
+    const allDone = hasTasks && dayTasks.every(t => t.done);
+    html += `
+      <div class="aspect-square flex flex-col items-center justify-center rounded-lg text-sm relative cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition ${isToday ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold' : ''}">
+        <span>${d}</span>
+        ${hasTasks ? `<div class="absolute bottom-1 flex gap-0.5"><div class="w-1 h-1 rounded-full ${allDone ? 'bg-emerald-400' : isToday ? 'bg-white' : 'bg-indigo-500'}"></div></div>` : ''}
+      </div>`;
+  }
+  grid.innerHTML = html;
+}
+document.getElementById('calPrev').addEventListener('click', () => { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); });
+document.getElementById('calNext').addEventListener('click', () => { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); });
+document.getElementById('calToday').addEventListener('click', () => { calDate = new Date(); renderCalendar(); });
+
+
+const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const hours = [];
+for (let h = 8; h <= 20; h++) hours.push(h);
+const colors = ['bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-pink-500', 'bg-indigo-500'];
+
+function renderSubjectsPalette() {
+  const c = document.getElementById('subjectsPalette');
+  c.innerHTML = data.subjects.map(s => `
+    <div draggable="true" data-subject="${s.id}" class="subject-chip ${s.color} text-white px-3 py-1.5 rounded-lg text-sm font-medium cursor-grab active:cursor-grabbing flex items-center gap-2 shadow-md hover:shadow-lg transition">
+      <span>${escapeHtml(s.name)}</span>
+      <button data-del="${s.id}" class="opacity-60 hover:opacity-100 text-xs">✕</button>
+    </div>
+  `).join('') + `
+    <div class="px-3 py-1.5 rounded-lg text-sm font-medium border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-400">
+      Drag onto grid →
+    </div>
+  `;
+  c.querySelectorAll('.subject-chip').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('subject', el.dataset.subject);
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+  });
+  c.querySelectorAll('[data-del]').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = b.dataset.del;
+      data.subjects = data.subjects.filter(s => s.id !== id);
+      Object.keys(data.timetable).forEach(k => { if (data.timetable[k] === id) delete data.timetable[k]; });
+      saveData(); renderSubjectsPalette(); renderTimetable();
+      toast('Subject removed');
+    });
+  });
+}
+
+function renderTimetable() {
+  const grid = document.getElementById('timetableGrid');
+  let html = `<div class="grid" style="grid-template-columns: 70px repeat(7, 1fr);">`;
+  html += `<div class="p-3 border-b border-r border-slate-200 dark:border-slate-800"></div>`;
+  days.forEach(d => {
+    html += `<div class="p-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-r border-slate-200 dark:border-slate-800 last:border-r-0">${d}</div>`;
+  });
+  hours.forEach(h => {
+    html += `<div class="p-2 text-xs text-slate-500 text-right border-b border-r border-slate-200 dark:border-slate-800">${h}:00</div>`;
+    days.forEach(d => {
+      const key = `${d}-${h}`;
+      const subId = data.timetable[key];
+      const sub = subId ? data.subjects.find(s => s.id === subId) : null;
+      html += `
+        <div class="timetable-slot border-b border-r border-slate-200 dark:border-slate-800 last:border-r-0 min-h-[50px] p-1 transition" data-key="${key}">
+          ${sub ? `<div class="${sub.color} text-white text-xs font-medium px-2 py-1.5 rounded-md h-full flex items-center justify-between gap-1">
+            <span class="truncate">${escapeHtml(sub.name)}</span>
+            <button data-clear="${key}" class="opacity-60 hover:opacity-100 flex-shrink-0">✕</button>
+          </div>` : ''}
+        </div>`;
+    });
+  });
+  html += `</div>`;
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.timetable-slot').forEach(slot => {
+    slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drag-over'); });
+    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+    slot.addEventListener('drop', e => {
+      e.preventDefault(); slot.classList.remove('drag-over');
+      const subId = e.dataTransfer.getData('subject');
+      if (subId) {
+        data.timetable[slot.dataset.key] = subId;
+        saveData(); renderTimetable(); updateStats();
+        toast('Class scheduled');
+      }
+    });
+  });
+  grid.querySelectorAll('[data-clear]').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      delete data.timetable[b.dataset.clear];
+      saveData(); renderTimetable(); updateStats();
+    });
+  });
+}
+
+document.getElementById('addSubjectBtn').addEventListener('click', () => {
+  openModal(`
+    <h3 class="text-xl font-bold mb-4">Add Subject</h3>
+    <input id="subjName" type="text" placeholder="Subject name" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+    <p class="text-sm font-medium mb-2">Pick a color</p>
+    <div class="flex flex-wrap gap-2 mb-6" id="colorPicker">
+      ${colors.map((c, i) => `<button data-color="${c}" class="${c} w-8 h-8 rounded-lg ${i===0?'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-slate-900':''}"></button>`).join('')}
+    </div>
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+      <button id="saveSubject" class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-600 text-white">Add</button>
+    </div>
+  `);
+  let pickedColor = colors[0];
+  document.querySelectorAll('#colorPicker button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#colorPicker button').forEach(x => x.classList.remove('ring-2','ring-offset-2','ring-indigo-500','dark:ring-offset-slate-900'));
+      b.classList.add('ring-2','ring-offset-2','ring-indigo-500','dark:ring-offset-slate-900');
+      pickedColor = b.dataset.color;
+    });
+  });
+  document.getElementById('saveSubject').addEventListener('click', () => {
+    const name = document.getElementById('subjName').value.trim();
+    if (!name) return;
+    data.subjects.push({ id: uid(), name, color: pickedColor });
+    saveData(); renderSubjectsPalette(); closeModal();
+    toast('Subject added');
+  });
+  document.getElementById('subjName').focus();
+});
+
+
+function priorityClass(p) {
+  if (p === 'high') return 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400';
+  if (p === 'low') return 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400';
+  return 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400';
+}
+
+function renderTasks() {
+  const c = document.getElementById('tasksList');
+  let list = [...data.tasks];
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (currentFilter === 'pending') list = list.filter(t => !t.done);
+  else if (currentFilter === 'completed') list = list.filter(t => t.done);
+  else if (currentFilter === 'overdue') list = list.filter(t => !t.done && t.due && new Date(t.due) < today);
+  list.sort((a,b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return (a.due || '').localeCompare(b.due || '');
+  });
+
+  if (list.length === 0) {
+    c.innerHTML = `<div class="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+      <div class="text-5xl mb-3">📝</div>
+      <p class="font-medium text-slate-600 dark:text-slate-400">No tasks here</p>
+      <p class="text-sm text-slate-400 mt-1">Click "New Task" to get started</p>
+    </div>`;
+    return;
+  }
+  c.innerHTML = list.map(t => {
+    const isOverdue = !t.done && t.due && new Date(t.due) < today;
+    return `
+    <div class="task-card bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start gap-3 group hover:shadow-md transition">
+      <input type="checkbox" ${t.done ? 'checked' : ''} data-id="${t.id}" class="checkbox-custom task-check w-5 h-5 rounded-md border-2 border-slate-300 dark:border-slate-600 cursor-pointer flex-shrink-0 mt-0.5"/>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-start justify-between gap-2 flex-wrap">
+          <p class="font-medium ${t.done ? 'line-through text-slate-400' : ''}">${escapeHtml(t.title)}</p>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-xs px-2 py-0.5 rounded-full ${priorityClass(t.priority)}">${t.priority || 'med'}</span>
+            ${isOverdue ? `<span class="text-xs px-2 py-0.5 rounded-full bg-rose-500 text-white">overdue</span>` : ''}
+          </div>
+        </div>
+        ${t.notes ? `<p class="text-sm text-slate-500 mt-1">${escapeHtml(t.notes)}</p>` : ''}
+        <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500">
+          ${t.subject ? `<span class="flex items-center gap-1">📚 ${escapeHtml(t.subject)}</span>` : ''}
+          ${t.due ? `<span class="flex items-center gap-1">📅 ${new Date(t.due).toLocaleDateString('en-US', { month:'short', day:'numeric' })}${t.time ? ' · ' + t.time : ''}</span>` : ''}
+        </div>
+      </div>
+      <button data-del-task="${t.id}" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a2 2 0 012-2h2a2 2 0 012 2v3"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+
+  c.querySelectorAll('.task-check').forEach(cb => cb.addEventListener('change', () => toggleTask(cb.dataset.id)));
+  c.querySelectorAll('[data-del-task]').forEach(b => b.addEventListener('click', () => {
+    data.tasks = data.tasks.filter(t => t.id !== b.dataset.delTask);
+    saveData(); renderAll(); toast('Task deleted');
+  }));
+}
+
+function toggleTask(id) {
+  const t = data.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  t.completedAt = t.done ? new Date().toISOString() : null;
+  saveData(); renderAll();
+  if (t.done) toast('Great work! ✨');
+}
+
+document.querySelectorAll('.task-filter').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.task-filter').forEach(x => x.classList.remove('active','border-indigo-500','bg-indigo-50','dark:bg-indigo-500/10'));
+    b.classList.add('active','border-indigo-500','bg-indigo-50','dark:bg-indigo-500/10');
+    currentFilter = b.dataset.filter;
+    renderTasks();
+  });
+});
+
+document.getElementById('addTaskBtn').addEventListener('click', () => {
+  const subjOptions = data.subjects.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join('');
+  openModal(`
+    <h3 class="text-xl font-bold mb-4">New Task</h3>
+    <div class="space-y-3">
+      <input id="tTitle" type="text" placeholder="Task title" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      <textarea id="tNotes" placeholder="Notes (optional)" rows="2" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="tDue" type="date" class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        <input id="tTime" type="time" class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <select id="tSubject" class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">No subject</option>${subjOptions}
+        </select>
+        <select id="tPriority" class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="low">Low priority</option>
+          <option value="med" selected>Medium</option>
+          <option value="high">High priority</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 justify-end mt-6">
+      <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+      <button id="saveTask" class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-600 text-white">Add Task</button>
+    </div>
+  `);
+  document.getElementById('tDue').value = new Date().toISOString().slice(0,10);
+  document.getElementById('tTitle').focus();
+  document.getElementById('saveTask').addEventListener('click', () => {
+    const title = document.getElementById('tTitle').value.trim();
+    if (!title) return;
+    data.tasks.push({
+      id: uid(), title,
+      notes: document.getElementById('tNotes').value.trim(),
+      due: document.getElementById('tDue').value,
+      time: document.getElementById('tTime').value,
+      subject: document.getElementById('tSubject').value,
+      priority: document.getElementById('tPriority').value,
+      done: false, createdAt: new Date().toISOString()
+    });
+    saveData(); renderAll(); closeModal(); toast('Task added');
+  });
+});
+
+
+function renderGoals() {
+  const c = document.getElementById('goalsList');
+  if (data.goals.length === 0) {
+    c.innerHTML = `<div class="md:col-span-2 text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+      <div class="text-5xl mb-3">🎯</div>
+      <p class="font-medium text-slate-600 dark:text-slate-400">No goals yet</p>
+      <p class="text-sm text-slate-400 mt-1">Set your first goal to start tracking</p>
+    </div>`;
+    return;
+  }
+  c.innerHTML = data.goals.map(g => {
+    const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+    const circumference = 2 * Math.PI * 36;
+    const offset = circumference - (pct / 100) * circumference;
+    const done = pct >= 100;
+    return `
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 group">
+      <div class="flex items-start gap-4">
+        <div class="relative flex-shrink-0">
+          <svg width="80" height="80" class="transform -rotate-90">
+            <circle cx="40" cy="40" r="36" stroke="currentColor" class="text-slate-200 dark:text-slate-700" stroke-width="6" fill="none"/>
+            <circle cx="40" cy="40" r="36" stroke="url(#grad-${g.id})" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" class="progress-ring"/>
+            <defs>
+              <linearGradient id="grad-${g.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center font-bold text-sm">${pct}%</div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2">
+            <h4 class="font-semibold ${done ? 'line-through text-slate-400' : ''}">${escapeHtml(g.title)}</h4>
+            <button data-del-goal="${g.id}" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition flex-shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <p class="text-sm text-slate-500 mt-1">${g.current} / ${g.target} ${escapeHtml(g.unit || '')}</p>
+          <div class="flex gap-2 mt-3">
+            <button data-goal-inc="${g.id}" class="px-3 py-1 rounded-lg text-xs font-medium bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/30">+1</button>
+            <button data-goal-dec="${g.id}" class="px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700">−1</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  c.querySelectorAll('[data-goal-inc]').forEach(b => b.addEventListener('click', () => {
+    const g = data.goals.find(x => x.id === b.dataset.goalInc);
+    if (g) { g.current = Math.min(g.target, g.current + 1); saveData(); renderGoals(); updateStats(); }
+  }));
+  c.querySelectorAll('[data-goal-dec]').forEach(b => b.addEventListener('click', () => {
+    const g = data.goals.find(x => x.id === b.dataset.goalDec);
+    if (g) { g.current = Math.max(0, g.current - 1); saveData(); renderGoals(); updateStats(); }
+  }));
+  c.querySelectorAll('[data-del-goal]').forEach(b => b.addEventListener('click', () => {
+    data.goals = data.goals.filter(g => g.id !== b.dataset.delGoal);
+    saveData(); renderGoals(); updateStats(); toast('Goal removed');
+  }));
+}
+
+document.getElementById('addGoalBtn').addEventListener('click', () => {
+  openModal(`
+    <h3 class="text-xl font-bold mb-4">New Goal</h3>
+    <div class="space-y-3">
+      <input id="gTitle" type="text" placeholder="e.g. Read 12 books this year" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="gTarget" type="number" min="1" value="10" placeholder="Target" class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        <input id="gUnit" type="text" placeholder="Unit (chapters, hours…)" class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      </div>
+    </div>
+    <div class="flex gap-2 justify-end mt-6">
+      <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+      <button id="saveGoal" class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-600 text-white">Create</button>
+    </div>
+  `);
+  document.getElementById('gTitle').focus();
+  document.getElementById('saveGoal').addEventListener('click', () => {
+    const title = document.getElementById('gTitle').value.trim();
+    const target = parseInt(document.getElementById('gTarget').value) || 1;
+    if (!title) return;
+    data.goals.push({
+      id: uid(), title, target, current: 0,
+      unit: document.getElementById('gUnit').value.trim()
+    });
+    saveData(); renderGoals(); updateStats(); closeModal(); toast('Goal created');
+  });
+});
+
+
+function renderCharts() {
+  if (!window.Chart) return;
+  if (window._charts) Object.values(window._charts).forEach(c => c.destroy());
+  window._charts = {};
+
+  const isDark = document.documentElement.classList.contains('dark');
+  const textColor = isDark ? '#cbd5e1' : '#475569';
+  const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.2)';
+  Chart.defaults.color = textColor;
+  Chart.defaults.font.family = 'Inter';
+
+  // Weekly completion
+  const labels = [];
+  const completed = [];
+  const created = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+    const ds = d.toDateString();
+    completed.push(data.tasks.filter(t => t.completedAt && new Date(t.completedAt).toDateString() === ds).length);
+    created.push(data.tasks.filter(t => t.createdAt && new Date(t.createdAt).toDateString() === ds).length);
+  }
+  window._charts.weekly = new Chart(document.getElementById('weeklyChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Created', data: created, backgroundColor: 'rgba(99, 102, 241, 0.4)', borderRadius: 6 },
+        { label: 'Completed', data: completed, backgroundColor: '#6366f1', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: gridColor } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Subject distribution
+  const subCount = {};
+  data.tasks.forEach(t => { if (t.subject) subCount[t.subject] = (subCount[t.subject]||0) + 1; });
+  Object.values(data.timetable).forEach(sid => {
+    const s = data.subjects.find(x => x.id === sid);
+    if (s) subCount[s.name] = (subCount[s.name]||0) + 1;
+  });
+  const subLabels = Object.keys(subCount);
+  const subData = Object.values(subCount);
+  window._charts.subject = new Chart(document.getElementById('subjectChart'), {
+    type: 'doughnut',
+    data: {
+      labels: subLabels.length ? subLabels : ['No data yet'],
+      datasets: [{
+        data: subData.length ? subData : [1],
+        backgroundColor: ['#6366f1','#a855f7','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6'],
+        borderWidth: 0
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+  });
+
+  // Status overview
+  const total = data.tasks.length;
+  const done = data.tasks.filter(t => t.done).length;
+  const pending = total - done;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const overdue = data.tasks.filter(t => !t.done && t.due && new Date(t.due) < today).length;
+  window._charts.status = new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Total', 'Completed', 'Pending', 'Overdue'],
+      datasets: [{
+        data: [total, done, pending, overdue],
+        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444'],
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: gridColor } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+
+function checkReminders() {
+  const now = new Date();
+  data.tasks.forEach(t => {
+    if (t.done || t.reminded || !t.due || !t.time) return;
+    const due = new Date(`${t.due}T${t.time}`);
+    const diff = (due - now) / 60000;
+    if (diff > 0 && diff <= 15) {
+      toast(`⏰ Coming up: ${t.title}`);
+      t.reminded = true; saveData();
+    }
+  });
+}
+
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+
+function renderAll() {
+  updateGreeting();
+  updateStats();
+  renderCalendar();
+  renderTodayTasks();
+  renderSubjectsPalette();
+  renderTimetable();
+  renderTasks();
+  renderGoals();
+}
+
+applyTheme();
+renderAll();
+checkReminders();
+setInterval(checkReminders, 60000);
+window.closeModal = closeModal;
+</script>
+</body>
+</html>
